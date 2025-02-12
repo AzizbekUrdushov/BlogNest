@@ -1,0 +1,214 @@
+{% extends 'basic/base.html' %}
+
+{% block title %}
+    Photo Blogs
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4 font-monospace">Posts</h1>
+
+    <div id="post-container">
+        <!-- Posts will be dynamically loaded here -->
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="text-center my-4" id="loading-spinner" style="display: none;">
+        <div class="spinner-grow text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        background-color: rgb(241, 249, 250);
+        border: none;
+        border-bottom: 0.1px solid rgb(158, 157, 157);
+        margin-bottom: 20px;
+        padding: 15px;
+    }
+
+    .card img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 9 / 16;
+    object-fit: cover;
+    max-height: 700px; /* Prevents the image from getting too tall */
+}
+
+    .reaction-button {
+        font-size: 1.2rem;
+    }
+
+    @media (max-width: 768px) {
+        .reaction-button {
+            font-size: 1rem;
+        }
+    }
+    @media (max-width: 768px) {
+    .card img {
+        min-width: 55%;
+        max-height: 80%; /* Smaller max height for mobile devices */
+        margin-left: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .card img {
+        min-width: 220px;
+        max-width: 280px;
+        min-height: 500px; /* Even smaller on very small screens */
+        max-height: 550px;
+    }
+}
+</style>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    let counter = 0;
+    let isLoading = false;
+    let noMorePosts = false;
+
+    function loadMorePosts() {
+        if (isLoading || noMorePosts) return;
+        isLoading = true;
+        $("#loading-spinner").show();
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'call_ajax' %}",
+            data: JSON.stringify({ counter: counter }),
+            contentType: "application/json",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+            success: function (response) {
+                let posts = JSON.parse(response.data);
+
+                if (!posts || posts.length === 0) {
+                    noMorePosts = true;
+                    $("#loading-spinner").hide();
+                    return;
+                }
+
+                posts.forEach(post => {
+                    let uploadedAt = new Date(post.fields.uploaded_at);
+                    let timeAgo = getTimeAgo(uploadedAt);
+
+                    let postHtml = `
+                        <div class="card shadow-sm mx-auto" style="max-width: 800px;">
+                            <div class="card-body text-center">
+                                <img src="/media/${post.fields.image}" alt="Image not found" class="img-fluid rounded mb-3">
+                                <p class="card-text fw-lighter">${post.fields.description}</p>
+                                <p class="text-muted small">${timeAgo}</p>
+                                <div class="d-flex justify-content-center">
+                                    ${renderReactionButton(post.pk, 'like', '👍')}
+                                    ${renderReactionButton(post.pk, 'dislike', '👎')}
+                                    ${renderReactionButton(post.pk, 'love', '❤️')}
+                                    ${renderReactionButton(post.pk, 'fire', '🔥')}
+                                    ${renderReactionButton(post.pk, 'sad', '😢')}
+                                    
+                                </div>
+                                <p class="text-muted small mb-0 text-end mt-2">
+                                            <i>posted by ${post.fields.title} <i class="fa-solid fa-user" ></i></i>
+                                        </p>
+                            </div>
+                        </div>
+                    `;
+
+                    $("#post-container").append(postHtml);
+                });
+
+                counter += 5;
+                isLoading = false;
+                $("#loading-spinner").hide();
+            },
+            error: function (xhr, status, error) {
+                console.error("Error fetching posts:", error);
+                isLoading = false;
+                $("#loading-spinner").hide();
+            }
+        });
+    }
+
+    function renderReactionButton(postId, reactionType, emoji) {
+        return `
+            <button class="btn btn-outline-secondary reaction-button me-2" 
+                    data-post-id="${postId}" 
+                    data-reaction="${reactionType}" 
+                    onclick="addReaction(${postId}, '${reactionType}', this)">
+                ${emoji}
+            </button>
+        `;
+    }
+
+    $(window).scroll(function () {
+        if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
+            loadMorePosts();
+        }
+    });
+
+    loadMorePosts();
+});
+
+function addReaction(postId, reactionType, button) {
+    fetch("/add_reaction/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ blog_id: postId, reaction: reactionType })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message || "Reaction added!");
+        } else {
+            showNotification("Failed to add reaction.");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        showNotification("An error occurred. Please try again.");
+    });
+}
+
+function showNotification(message) {
+    let notification = $('<div class="notification"></div>').text(message);
+
+    notification.css({
+        "position": "fixed",
+        "top": "10px",
+        "left": "50%",
+        "transform": "translateX(-50%)",
+        "background": "green",
+        "color": "white",
+        "padding": "10px 20px",
+        "border-radius": "5px",
+        "z-index": "1000",
+        "font-size": "14px",
+        "display": "none"
+    });
+
+    $("body").append(notification);
+    notification.fadeIn(300).delay(2000).fadeOut(300, function () {
+        $(this).remove();
+    });
+}
+
+function getTimeAgo(uploadedAt) {
+    let now = new Date();
+    let timeDiff = now - uploadedAt;
+    let minutes = Math.floor(timeDiff / 60000);
+    let hours = Math.floor(timeDiff / (1000 * 60 * 60));
+    let days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} minutes ago`;
+    if (hours < 24) return `${hours} hours ago`;
+    return `${days} days ago`;
+}
+</script>
+
+{% endblock %}

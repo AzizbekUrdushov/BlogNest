@@ -1,0 +1,224 @@
+{% extends 'basic/base.html' %}
+
+{% block title %}
+    Audio Blogs
+{% endblock %}
+
+
+
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4 font-monospace">Audio Posts</h1>
+
+    <div class="row" id="post-container">
+        <!-- Placeholder for posts (shown during loading) -->
+        <div class="col-12 mb-3 post-placeholder" style="display: none;">
+            <div class="card shadow-sm w-100 mx-auto mb-4 p-3 text-center" 
+                 style="background-color: rgb(241, 249, 250); border: none; border-bottom: 0.1px solid rgb(158, 157, 157);">
+                <div class="card-body">
+                    <h5 class="card-title fw-bolder placeholder col-6"></h5>
+                    <div class="d-flex justify-content-center align-items-center" style="height: 30vh;">
+                        <div class="placeholder w-100" style="height: 100%;"></div>
+                    </div>
+                    <p class="card-text fw-lighter placeholder col-8"></p>
+                    <p class="text-muted small placeholder col-4"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="text-center my-4" id="loading-spinner" style="display: none;">
+        <div class="spinner-grow text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+
+
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    let counter = 0;
+    let isLoading = false;
+    let allPostsLoaded = false;
+
+    // Load more posts function
+    function loadMorePosts() {
+        if (isLoading || allPostsLoaded) return;
+        isLoading = true;
+        $("#loading-spinner").show();
+        $(".post-placeholder").show();
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'callajax2' %}",
+            data: JSON.stringify({ counter: counter }),
+            contentType: "application/json",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+            success: function (response) {
+                let posts = JSON.parse(response.data);
+
+                if (posts.length === 0) {
+                    allPostsLoaded = true;
+                    $("#loading-spinner").hide();
+                    $(".post-placeholder").remove();
+                    return;
+                }
+
+                posts.forEach(post => {
+                    const timeAgo = calculateTimeAgo(new Date(post.fields.uploaded_at));
+                    let postHtml = `
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm p-3 text-center mx-auto" 
+             style="max-width: 800px; background-color: rgb(241, 249, 250); border: none; border-bottom: 0.1px solid rgb(158, 157, 157);">
+            <div class="card-body">
+                <div class="d-flex justify-content-center align-items-center" style="height: 25vh;">
+                    <audio controls class="w-100">
+                        <source src="/media/${post.fields.audio}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                <p class="card-text fw-lighter">${post.fields.description}</p>
+                <p class="text-muted small">${timeAgo}</p>
+                <div class="d-flex justify-content-center flex-wrap">
+                    ${renderReactionButton(post.pk, 'like', '👍')}
+                    ${renderReactionButton(post.pk, 'dislike', '👎')}
+                    ${renderReactionButton(post.pk, 'love', '❤️')}
+                    ${renderReactionButton(post.pk, 'fire', '🔥')}
+                    ${renderReactionButton(post.pk, 'sad', '😢')}
+                    
+                </div>
+                <p class="text-muted small mb-0 text-end mt-2">
+                                            <i>posted by ${post.fields.title} <i class="fa-solid fa-user" ></i></i>
+                                        </p>
+            </div>
+        </div>
+    </div>
+`;
+
+
+                    $("#post-container").append(postHtml);
+                });
+
+                counter += 5;
+                isLoading = false;
+                $("#loading-spinner").hide();
+                $(".post-placeholder").remove();
+                initAudioObserver();  // Re-initialize observer for new posts
+            },
+            error: function () {
+                console.error("Error fetching posts.");
+                isLoading = false;
+                $("#loading-spinner").hide();
+                $(".post-placeholder").remove();
+            }
+        });
+    }
+
+    function renderReactionButton(postId, reactionType, emoji) {
+        return `
+            <button class="btn btn-outline-secondary reaction-button me-2 mb-2" 
+                    data-post-id="${postId}" 
+                    data-reaction="${reactionType}" 
+                    onclick="addReaction(${postId}, '${reactionType}', this)">
+                ${emoji}
+            </button>
+        `;
+    }
+
+    $(window).scroll(function () {
+        if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
+            loadMorePosts();
+        }
+    });
+
+    loadMorePosts();  // Initial load
+
+    function calculateTimeAgo(uploadedAt) {
+        const now = new Date();
+        const timeDiff = now - uploadedAt;
+        const minutes = Math.floor(timeDiff / 60000);
+        const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes} minutes ago`;
+        if (hours < 24) return `${hours} hours ago`;
+        return `${days} days ago`;
+    }
+    let userInteracted = false;
+    document.addEventListener("click", () => userInteracted = true);
+    ocument.addEventListener("scroll", () => userInteracted = true);
+    function initAudioObserver() {
+    let previousAudio = null;
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const audio = entry.target;
+            if (entry.isIntersecting && userInteracted) {
+                if (previousAudio && previousAudio !== audio) {
+                    previousAudio.pause();
+                    previousAudio.currentTime = 0;
+                }
+                audio.play().catch(error => console.log("Audio play failed:", error));  // Handle play error
+                previousAudio = audio;
+            } else {
+                audio.pause();
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll("audio").forEach(audio => observer.observe(audio));
+}
+});
+function addReaction(postId, reactionType, button) {
+    fetch("/add_reaction/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ blog_id: postId, reaction: reactionType })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message || "Reaction added!");
+        } else {
+            showNotification("Failed to add reaction.");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        showNotification("An error occurred. Please try again.");
+    });
+}
+
+function showNotification(message) {
+    let notification = $('<div class="notification"></div>').text(message);
+
+    notification.css({
+        "position": "fixed",
+        "top": "10px",
+        "left": "50%",
+        "transform": "translateX(-50%)",
+        "background": "green",
+        "color": "white",
+        "padding": "10px 20px",
+        "border-radius": "5px",
+        "z-index": "1000",
+        "font-size": "14px",
+        "display": "none"
+    });
+
+    $("body").append(notification);
+    notification.fadeIn(300).delay(2000).fadeOut(300, function () {
+        $(this).remove();
+    });
+}
+</script>
+{% endblock %}

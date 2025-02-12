@@ -1,0 +1,46 @@
+{% extends 'basic/base.html' %}
+
+{% block title %} Login {% endblock %}
+
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center mt-5" style="min-height: 100vh;">
+    <div class="card p-4" style="width: 100%; max-width: 600px; background-color: #f1f9fa; border-radius: 13px;">
+        <h2 class="text-center mb-4">Login</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                {{ form.username|add_class:"form-control" }}
+                {% if form.username.errors %}
+                    <div class="text-danger mt-1">{{ form.username.errors.0 }}</div>
+                {% endif %}
+            </div>
+        
+            <div class="mb-3">
+                <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                {{ form.password|add_class:"form-control" }}
+                {% if form.password.errors %}
+                    <div class="text-danger mt-1">{{ form.password.errors.0 }}</div>
+                {% endif %}
+            </div>
+        
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+        
+
+        <p class="text-center mt-2">
+            <a href="{% url 'password_reset' %}" class="btn btn-link">Forgot password?</a>
+        </p>
+        
+        <div class="container mt-5">
+            <div class="text-center">
+                <p>Do not have an account?</p>
+                <a href="{% url 'blogger_signup' %}" class="btn btn-outline-primary">Blogger Sign Up Form</a>
+                <a href="{% url 'regular_user_signup' %}" class="btn btn-outline-secondary">Regular User Sign Up Form</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

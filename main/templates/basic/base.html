@@ -1,0 +1,230 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %} Home {% endblock %}</title>
+    <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+      <style>
+  body {
+    font-family: 'Arial', sans-serif;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 70px;
+    height: 100%;
+    background: linear-gradient(135deg, #2c3e50, #1c2833);
+    transition: width 0.3s ease, background-color 0.3s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    z-index: 999;
+  }
+
+  .sidebar:hover {
+    width: 200px;
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+  }
+
+  .sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    color: #ecf0f1;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+
+  .sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(10px);
+  }
+
+  .sidebar i {
+    font-size: 24px;
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar:hover i {
+    transform: rotate(360deg);
+  }
+
+  .sidebar span {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar:hover span {
+    display: inline;
+    opacity: 1;
+  }
+
+  .logout-link:hover {
+    background-color: #f8d7da; /* Light red background on hover */
+    border-radius: 5px;
+  }
+
+  
+
+  @media (max-width: 600px) {
+    .container-fluid {
+      padding: 0 15px;
+      margin-left: 20px;
+    }
+
+    .sidebar{
+      position: fixed;
+      display: flex;
+    }
+
+    .card {
+      padding: 20px;
+    }
+
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+      display: none;
+    }
+
+    img {
+      width: 120px !important;
+      height: 120px !important;
+    }
+    .container{
+      margin-left: 20px;
+    }
+  }
+</style>
+
+  </style>
+</head>
+<body>
+  {% if user.is_authenticated%}
+  <div class="sidebar d-flex flex-column min-vh-100">
+    <a href="{% url 'home' %}" class="nav-link">
+      <i class="fa-solid fa-house"></i>
+      <span>Home</span>
+    </a>
+    <a href="{% url 'text' %}" class="nav-link">
+      <i class="fa-solid fa-align-left"></i>
+      <span>Text Posts</span>
+    </a>
+    <a href="{% url 'photo' %}" class="nav-link">
+      <i class="fa-solid fa-image"></i>
+      <span>Photo Posts</span>
+    </a>
+    <a href="{% url 'video' %}" class="nav-link">
+      <i class="fa-solid fa-camera"></i>
+      <span>Video Posts</span>
+    </a>
+    <a href="{% url 'audio' %}" class="nav-link">
+      <i class="fa-solid fa-microphone-lines"></i>
+      <span>Audio Posts</span>
+    </a>
+    {% if user.is_blogger %}
+      <a href="{% url 'create_text' %}" class="nav-link">
+        <i class="fa-solid fa-square-plus"></i>
+        <span>Create Posts</span>
+      </a>
+    {% endif %}
+    <div class="mt-auto">
+      <a href="{% url 'logout' %}" class="nav-link text-danger p-2 logout-link">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <span>Log Out</span>
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+
+  {% block content %}
+    <div class="container-fluid mt-5">
+      <div class="row">
+        <div class="col-12 col-md-8 mx-auto">
+          <div class="card shadow-lg p-5">
+            <!-- Profile Picture -->
+            <div class="text-center mb-4">
+              <img src="{{ profile_picture }}" 
+                   alt="Profile Picture" 
+                   class="img-fluid rounded-circle shadow mx-auto d-block"
+                   style="width: 150px; height: 150px; object-fit: cover; border: 4px solid #007bff;">
+            </div>
+            <h4 class="card-title text-center mb-3">{{ username }}</h4>
+            <p class="card-text text-center">Name: <span>{{ name }}</span></p>
+            <p class="card-text text-center">Surname: <span>{{ surname }}</span></p>
+            <p class="card-text text-center">Bio: <span>{{ bio }}</span></p>
+            <p class="card-text text-center">Account type: <span>{% if user.is_blogger %} Blogger {% else %} Custom {% endif %}</span></p>
+            <div class="text-center mt-3">
+              <a href="/edit-profile" class="btn btn-outline-primary btn-sm">Edit Profile</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+        
+        {% if user.is_blogger %}
+        <div class="container mt-4">
+          <div class="row">
+            <div class="col-12">
+              {% if user.is_blogger %}
+                <div class="card shadow mt-4">
+                  <div class="card-body">
+                    <h5 class="card-title text-center">Create a New Post</h5>
+                    <div id="carouselExampleAutoplaying" class="carousel slide" data-bs-ride="carousel">
+                      <div class="carousel-inner">
+                        <!-- Text Post Slide -->
+                        <div class="carousel-item active text-center">
+                          <h3>Create a Text Post</h3>
+                          <p>Share your thoughts and stories with the world!</p>
+                          <a href="create_text_post" class="btn btn-primary">Create Text Post</a>
+                        </div>
+                        <!-- Photo Post Slide -->
+                        <div class="carousel-item text-center">
+                          <h3>Create a Photo Post</h3>
+                          <p>Upload and showcase your best pictures!</p>
+                          <a href="create_photo_post" class="btn btn-success">Create Photo Post</a>
+                        </div>
+                        <!-- Audio Post Slide -->
+                        <div class="carousel-item text-center">
+                          <h3>Create an Audio Post</h3>
+                          <p>Record and share your voice or music!</p>
+                          <a href="create_audio_post" class="btn btn-warning">Create Audio Post</a>
+                        </div>
+                        <!-- Video Post Slide -->
+                        <div class="carousel-item text-center">
+                          <h3>Create a Video Post</h3>
+                          <p>Share your videos with the community!</p>
+                          <a href="create_video_post" class="btn btn-danger">Create Video Post</a>
+                        </div>
+                      </div>
+                      <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                      </button>
+                      <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+    {% endblock %}
+
+    
+        
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

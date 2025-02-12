@@ -1,0 +1,212 @@
+{% extends 'basic/base.html' %}
+
+{% block title %}
+    Create Photo Post
+{% endblock %}
+
+{% load widget_tweaks %}
+
+
+{% block content %}
+{% if user.is_blogger %}
+{% if messages %}
+    <div class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1050;">
+        {% for message in messages %}
+            <div class="alert alert-success shadow-lg fade show text-center d-flex align-items-center justify-content-between"
+                 id="success-message" style="max-width: 400px; border-radius: 10px; padding: 15px 20px;">
+                <h5 class="mb-0 flex-grow-1">{{ message }}</h5>
+                <button type="button" class="btn-close ms-3" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        setTimeout(function() {
+            var message = document.getElementById("success-message");
+            if (message) {
+                message.classList.add("fade-out");  // Adds fade-out effect
+                setTimeout(() => message.style.display = "none", 500);
+            }
+        }, 3000); // Hides the message after 3 seconds
+    </script>
+
+    <style>
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+        .card {
+    box-shadow: 0 0 10px rgba(13, 110, 253, 0.5);
+    border-radius: 15px;
+    width: 80%;
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99;
+    transition: all 0.3s ease;
+  }
+
+  .navbar-nav .nav-link {
+    color: #007bff;
+    font-weight: 500;
+    transition: color 0.3s ease, transform 0.2s ease;
+  }
+
+  .navbar-nav .nav-link:hover {
+    color: #0056b3;
+    transform: translateY(-2px);
+  }
+
+  .navbar-toggler {
+    border: none;
+    outline: none;
+    transition: transform 0.3s ease;
+  }
+
+  .navbar-toggler:focus {
+    transform: rotate(90deg);
+  }
+
+  .collapse.show {
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+    </style>
+{% endif %}
+
+<div class="card shadow-primary mt-2" style="box-shadow: 0 0 10px rgba(13, 110, 253, 0.5); 
+                                            border-radius: 15px; 
+                                            width:80%; 
+                                            position: fixed;
+                                            top: 0;
+                                            left: 50%;
+                                            transform: translateX(-50%);
+                                            z-index: 99;">
+    <div class="card-body">
+        <!-- Navbar with Collapse for small screens -->
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <!-- Navbar toggle button -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navbar content -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav w-100 justify-content-around">
+                    <!-- Text Post Link -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/create_text_post' %}active{% endif %}" href="create_text_post">Text Post</a>
+                    </li>
+                    <!-- Photo Post Link -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/create_photo_post' %}active{% endif %}" href="create_photo_post">Photo Post</a>
+                    </li>
+                    <!-- Audio Post Link -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/create_audio_post' %}active{% endif %}" href="create_audio_post">Audio Post</a>
+                    </li>
+                    <!-- Video Post Link -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/create_video_post' %}active{% endif %}" href="create_video_post">Video Post</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/create_video_post' %}active{% endif %}" href="{% url 'home' %}">Back to Home Page</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<div class="container d-flex justify-content-center align-items-center mt-5" style="min-height: 100vh; margin-left: 40px;">
+    <div class="card p-4" style="width: 100%; max-width: 600px; background-color: #f1f9fa; border-radius: 13px;">
+        <h2 class="text-center mb-4">Create Your Photo Blog</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="{{ form.title.id_for_label }}" class="form-label">Username</label>
+                {{ form.title|add_class:"form-control" }}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_photo" class="form-label">Upload Photo</label>
+            
+                <!-- Custom File Input Button -->
+                <div class="custom-file">
+                    <input type="file" class="form-control" id="id_photo" name="photo" style="display: none;" onchange="displayImagePreview(event)">
+                    <label for="id_photo" class="btn btn-primary w-100">Choose File</label>
+                </div>
+            
+                <!-- Image preview (optional) -->
+                <div id="image-preview" class="mb-2" style="display: none; margin-top: 3%; border-radius: 20px;">
+                    <img src="" id="image-preview-img" class="img-fluid" alt="Preview" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                {{ form.description|add_class:"form-control" }}
+            </div>
+
+            
+
+            <button type="submit" name="save" class="btn btn-primary w-100" >Upload</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    setTimeout(function() {
+      var message = document.getElementById("success-message");
+      if (message) {
+        message.style.display = "none";
+      }
+    }, 3000);  // Hides the message after 3 seconds
+
+
+    // Preview Image before upload
+    function displayImagePreview(event) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            var preview = document.getElementById("image-preview");
+            var previewImg = document.getElementById("image-preview-img");
+            previewImg.src = reader.result;
+            preview.style.display = "block";
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    const currentLocation = window.location.pathname.split("/").pop();
+
+    // Select all nav links
+    const navLinks = document.querySelectorAll(".nav-link");
+
+    // Loop through links and add 'active' class to the current page
+    navLinks.forEach(link => {
+        if (link.getAttribute("href") === currentLocation) {
+            link.classList.add("active");
+        }
+    });
+</script>
+
+}
+
+{% else %}
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+        <h3>Sorry you are not a blogger. You do not have access to create posts. Please enjoy browsing the blogs!</h3>
+    </div>
+{% endif %}
+
+{% endblock %}
