@@ -30,7 +30,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
         '127.0.0.1',  # Localhost for development
         'localhost', 
-        'blognest-rhp1.onrender.com',
+        'blognest-qci5.onrender.com',
 ]
 
 #custom user model
