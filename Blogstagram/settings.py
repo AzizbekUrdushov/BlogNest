@@ -23,9 +23,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-+erc=bcg-x=j*0h&%eks2$1x^d5%w4v*rao6dxa+#(g1b+-(*m"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+        '127.0.0.1',  # Localhost for development
+        'localhost', 
+        'blognest-rhp1.onrender.com',
+]
 
 #custom user model
 AUTH_USER_MODEL = 'main.CustomUser'
